@@ -1,0 +1,72 @@
+services:
+    zookeeper:
+        image: confluentinc/cp-zookeeper:7.5.1
+        container_name: zookeeper
+        environment:
+            ZOOKEEPER_CLIENT_PORT: 2181
+            ZOOKEEPER_TICK_TIME: 2000
+        ports:
+            - "2181:2181"
+    kafka:
+        image: confluentinc/cp-kafka:7.5.1
+        container_name: kafka
+        depends_on:
+            - zookeeper
+        environment:
+            KAFKA_BROKER_ID: 1
+            KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+            KAFKA_LISTENERS: INTERNAL_CLIENT://0.0.0.0:29092,EXTERNAL_CLIENT://0.0.0.0:9092
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL_CLIENT:PLAINTEXT,EXTERNAL_CLIENT:PLAINTEXT
+            KAFKA_ADVERTISED_LISTENERS: INTERNAL_CLIENT://kafka:29092,EXTERNAL_CLIENT://localhost:9092
+            KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL_CLIENT
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        ports:
+            - "9092:9092"
+        volumes: 
+            - kafka_data:/var/lib/kafka/data
+    kafka-connect:
+        image: confluentinc/cp-kafka-connect:7.5.1
+        container_name: kafka-connect
+        depends_on:
+            - kafka
+            - postgres
+        environment:
+            CONNECT_BOOTSTRAP_SERVERS: kafka:29092
+            CONNECT_GROUP_ID: connect-group
+            CONNECT_CONFIG_STORAGE_TOPIC: connect-configs # Kafka topic for storing connector configurations
+            CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
+            CONNECT_STATUS_STORAGE_TOPIC: connect-status
+            CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+            CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+            CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+            CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+            CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "true" # (optional schema registry)
+            CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+            CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "true" # (optional schema registry)
+            CONNECT_PLUGIN_PATH: /usr/share/java # Path to the Kafka Connect plugins directory
+        ports:
+            - "8083:8083"
+        volumes:
+            - ./kafka-connect-jars:/usr/share/java
+    postgres:
+        image: postgres:15
+        container_name: postgres
+        healthcheck:
+            test: ["CMD", "pg_isready", "-U", "kafka_user"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        environment:
+            POSTGRES_USER: kafka_user         # temp username
+            POSTGRES_PASSWORD: kafka_password # temp password
+            POSTGRES_DB: orders_db            # temp database name
+        ports:
+            - "5432:5432"
+        volumes: 
+            - postgres_data:/var/lib/postgresql/data   
+#    minio:
+#        image: minio/minio:RELEASE.2023-01-20T02-05-44Z.hotfix.b9b60d73d
+#        container_name: minio
+#        environment:
+#        ports:
+#        volumes:
