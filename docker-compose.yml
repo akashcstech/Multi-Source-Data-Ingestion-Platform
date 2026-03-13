@@ -47,7 +47,7 @@ services:
         ports:
             - "8083:8083"
         volumes:
-            - ./kafka-connect-jars:/usr/share/java
+            - ./kafka-connect-jars:/usr/share/java # bind mount
     postgres:
         image: postgres:15
         container_name: postgres
@@ -64,6 +64,9 @@ services:
             - "5432:5432"
         volumes: 
             - postgres_data:/var/lib/postgresql/data   
+volumes:
+    kafka_data:
+    postgres_data:
 #    minio:
 #        image: minio/minio:RELEASE.2023-01-20T02-05-44Z.hotfix.b9b60d73d
 #        container_name: minio
