@@ -32,6 +32,7 @@ services:
             - postgres
         environment:
             CONNECT_BOOTSTRAP_SERVERS: kafka:29092
+            CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
             CONNECT_GROUP_ID: connect-group
             CONNECT_CONFIG_STORAGE_TOPIC: connect-configs # Kafka topic for storing connector configurations
             CONNECT_OFFSET_STORAGE_TOPIC: connect-offsets
